@@ -1,49 +1,47 @@
-function writeDataToSheet() {
-  // Use your existing API function to fetch data
-  const apiData = getReport(); // This is your working function
+function handleLargeAPIData() {
+  const apiData = getReport(); // Replace with your actual API function
 
-  // Log the fetched data for debugging
-  Logger.log("Fetched Data: " + JSON.stringify(apiData));
-
-  // Ensure the data is valid
   if (!apiData || apiData.length === 0) {
     Logger.log("No data available to process.");
     return;
   }
 
-  // Extract unique keys from the JSON data (for headers)
-  const allKeys = extractUniqueKeys(apiData);
-
-  // Log the keys for debugging
-  Logger.log("Extracted Keys: " + JSON.stringify(allKeys));
-
-  // If no keys are found, log an error and exit
-  if (allKeys.length === 0) {
-    Logger.log("Error: No unique keys found in the data.");
-    return;
+  if (apiData.length > 100000) { // Example threshold
+    Logger.log("Data too large for Google Sheets. Saving to a file.");
+    saveLargeDataToFile(apiData);
+  } else {
+    Logger.log("Data size manageable. Writing to Google Sheets in chunks.");
+    writeDataInChunks(apiData);
   }
+}
 
-  // Format rows for the spreadsheet
-  const rows = apiData.map(item => allKeys.map(key => item[key] || ""));
+function writeDataInChunks(apiData) {
+  const allKeys = extractUniqueKeys(apiData);
+  const sheetData = apiData.map(item => allKeys.map(key => item[key] || ""));
 
-  // Add headers as the first row
-  const sheetData = [allKeys, ...rows];
-
-  // Log the final data to write for debugging
-  Logger.log("Final Data to Write: " + JSON.stringify(sheetData));
-
-  // Create a new Google Spreadsheet
-  const spreadsheet = SpreadsheetApp.create("API Data Report");
+  const spreadsheet = SpreadsheetApp.create("Large API Data Report");
   const sheet = spreadsheet.getActiveSheet();
 
-  // Write the data to the sheet
-  sheet.getRange(1, 1, sheetData.length, sheetData[0].length).setValues(sheetData);
+  // Write headers
+  sheet.getRange(1, 1, 1, allKeys.length).setValues([allKeys]);
 
-  // Log the URL of the newly created spreadsheet
+  // Write data in chunks
+  const chunkSize = 500;
+  for (let i = 0; i < sheetData.length; i += chunkSize) {
+    const chunk = sheetData.slice(i, i + chunkSize);
+    sheet.getRange(i + 2, 1, chunk.length, allKeys.length).setValues(chunk);
+    Logger.log(`Written rows ${i + 1} to ${i + chunk.length}`);
+  }
+
   Logger.log(`Spreadsheet created: ${spreadsheet.getUrl()}`);
 }
 
-// Function to extract all unique keys from an array of JSON objects
+function saveLargeDataToFile(apiData) {
+  const jsonString = JSON.stringify(apiData);
+  const file = DriveApp.createFile("Large_API_Data.json", jsonString, MimeType.PLAIN_TEXT);
+  Logger.log(`Large data saved to file: ${file.getUrl()}`);
+}
+
 function extractUniqueKeys(dataArray) {
   const allKeys = [];
   dataArray.forEach(item => {
