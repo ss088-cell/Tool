@@ -1,30 +1,34 @@
 function generateReport() {
-  // Step 1: Call your existing API function to fetch the data
-  const apiData = getReport(); // Your working API function
+  // Step 1: Fetch data using your existing API function
+  const apiData = getReport(); // Call your existing working API function
 
-  // Step 2: Validate and process the fetched data
+  // Step 2: Log the raw data for debugging
+  Logger.log("Raw API Data: " + JSON.stringify(apiData));
+
+  // Step 3: Validate and process the data
+  let dataArray;
   if (!apiData) {
     Logger.log("Error: API data is undefined or null.");
     return;
-  }
-
-  // Check if the data is an array; if not, attempt to extract the inner array (e.g., if wrapped in `data`)
-  let dataArray = Array.isArray(apiData) ? apiData : apiData.data;
-
-  if (!Array.isArray(dataArray)) {
-    Logger.log("Error: Processed data is not an array. Exiting.");
+  } else if (Array.isArray(apiData)) {
+    dataArray = apiData; // Directly use if it's already an array
+  } else if (apiData.data && Array.isArray(apiData.data)) {
+    dataArray = apiData.data; // Extract the array if it's wrapped in an object
+  } else {
+    Logger.log("Error: API data is not in a recognizable format.");
     return;
   }
 
+  // Step 4: Check if the data array is empty
   if (dataArray.length === 0) {
-    Logger.log("Error: Data array is empty. Exiting.");
+    Logger.log("Error: Data array is empty.");
     return;
   }
 
-  // Log the size of the data for debugging
+  // Log the number of records for debugging
   Logger.log(`Number of records fetched: ${dataArray.length}`);
 
-  // Step 3: Extract unique keys for column headers
+  // Step 5: Extract unique keys for column headers
   const allKeys = extractUniqueKeys(dataArray);
 
   if (allKeys.length === 0) {
@@ -32,14 +36,14 @@ function generateReport() {
     return;
   }
 
-  // Step 4: Create a new Google Spreadsheet
+  // Step 6: Create a new Google Spreadsheet
   const spreadsheet = SpreadsheetApp.create("API Report");
   const sheet = spreadsheet.getActiveSheet();
 
   // Write headers
   sheet.getRange(1, 1, 1, allKeys.length).setValues([allKeys]);
 
-  // Step 5: Write data in chunks
+  // Step 7: Write data in chunks (to handle large datasets)
   const chunkSize = 500; // Number of rows per chunk
   for (let i = 0; i < dataArray.length; i += chunkSize) {
     const chunk = dataArray.slice(i, i + chunkSize).map(item =>
