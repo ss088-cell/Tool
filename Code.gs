@@ -1,40 +1,48 @@
 function generateReport() {
-  // Fetch the JSON data using your existing API function
-  const apiData = getReport(); // Replace this with your working API function
+  // Step 1: Call your existing API function to fetch the data
+  const apiData = getReport(); // Your working API function
 
-  // Validate the fetched data
-  if (!apiData || !Array.isArray(apiData)) {
-    Logger.log("Error: API data is undefined or not an array.");
+  // Step 2: Validate and process the fetched data
+  if (!apiData) {
+    Logger.log("Error: API data is undefined or null.");
     return;
   }
 
-  if (apiData.length === 0) {
-    Logger.log("No data available to process.");
+  // Check if the data is an array; if not, attempt to extract the inner array (e.g., if wrapped in `data`)
+  let dataArray = Array.isArray(apiData) ? apiData : apiData.data;
+
+  if (!Array.isArray(dataArray)) {
+    Logger.log("Error: Processed data is not an array. Exiting.");
     return;
   }
 
-  // Log the number of records fetched
-  Logger.log(`Number of records fetched: ${apiData.length}`);
+  if (dataArray.length === 0) {
+    Logger.log("Error: Data array is empty. Exiting.");
+    return;
+  }
 
-  // Extract unique keys from JSON data (column headers)
-  const allKeys = extractUniqueKeys(apiData);
+  // Log the size of the data for debugging
+  Logger.log(`Number of records fetched: ${dataArray.length}`);
 
-  if (!allKeys || allKeys.length === 0) {
+  // Step 3: Extract unique keys for column headers
+  const allKeys = extractUniqueKeys(dataArray);
+
+  if (allKeys.length === 0) {
     Logger.log("Error: No unique keys found in the data.");
     return;
   }
 
-  // Create a new Google Spreadsheet
+  // Step 4: Create a new Google Spreadsheet
   const spreadsheet = SpreadsheetApp.create("API Report");
   const sheet = spreadsheet.getActiveSheet();
 
   // Write headers
   sheet.getRange(1, 1, 1, allKeys.length).setValues([allKeys]);
 
-  // Write data in chunks (to handle large datasets)
+  // Step 5: Write data in chunks
   const chunkSize = 500; // Number of rows per chunk
-  for (let i = 0; i < apiData.length; i += chunkSize) {
-    const chunk = apiData.slice(i, i + chunkSize).map(item =>
+  for (let i = 0; i < dataArray.length; i += chunkSize) {
+    const chunk = dataArray.slice(i, i + chunkSize).map(item =>
       allKeys.map(key => item[key] || "") // Fill missing keys with empty strings
     );
     sheet.getRange(i + 2, 1, chunk.length, allKeys.length).setValues(chunk);
@@ -46,12 +54,6 @@ function generateReport() {
 
 // Function to extract unique keys from an array of JSON objects
 function extractUniqueKeys(dataArray) {
-  // Validate the input to ensure it's an array
-  if (!Array.isArray(dataArray)) {
-    Logger.log("Error: Input data is not an array.");
-    return []; // Return an empty array if the input is invalid
-  }
-
   const allKeys = [];
   dataArray.forEach(item => {
     if (item && typeof item === "object") { // Ensure each item is a valid object
@@ -62,38 +64,5 @@ function extractUniqueKeys(dataArray) {
       });
     }
   });
-
-  return allKeys; // Return the list of unique keys
-}
-
-// Example API fetching function
-function getReport() {
-  const url = "https://example.com/api/vulnerabilities"; // Replace with your API URL
-
-  const options = {
-    method: "get",
-    headers: {
-      "Authorization": "Bearer your-api-token", // Replace with your API token
-      "Content-Type": "application/json"
-    }
-  };
-
-  try {
-    // Fetch data from the API
-    const response = UrlFetchApp.fetch(url, options);
-    const jsonData = JSON.parse(response.getContentText());
-
-    // Ensure the returned data is an array
-    if (!Array.isArray(jsonData)) {
-      Logger.log("Error: API did not return an array.");
-      return [];
-    }
-
-    // Log the number of records fetched
-    Logger.log(`Fetched ${jsonData.length} records.`);
-    return jsonData;
-  } catch (error) {
-    Logger.log("Error fetching API data: " + error.message);
-    return [];
-  }
+  return allKeys;
 }
