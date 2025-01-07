@@ -1,33 +1,49 @@
-function createVulnerabilityReport() {
-  // Fetch data from the mock API
-  const apiData = fetchDataFromAPI();
+function getReport() {
+  // Simulated API call returning a query response
+  const queryData = [
+    { ID: "1", Name: "Alice", Age: 25, Location: "New York" },
+    { ID: "2", Name: "Bob", Age: 30, Department: "Finance" },
+    { ID: "3", Name: "Charlie", Age: 28, Location: "San Francisco" },
+    { ID: "4", Name: "Diana", Age: 35 }
+  ];
+  
+  // Log the data for reference
+  Logger.log("Data: " + JSON.stringify(queryData));
 
-  // Check if the data is an array; if not, convert it to an array
-  const dataArray = Array.isArray(apiData) ? apiData : [apiData];
-
-  // Extract all unique keys from the JSON data
-  const allKeys = extractUniqueKeys(dataArray);
-
-  // Create data rows with empty strings for missing fields
-  const rows = dataArray.map(item => {
-    return allKeys.map(key => item[key] || ""); // Fill missing keys with empty strings
-  });
-
-  // Add the header row to the data
-  const reportData = [allKeys, ...rows];
-
-  // Create a new spreadsheet
-  const spreadsheet = SpreadsheetApp.create("Vulnerability Report");
-  const sheet = spreadsheet.getActiveSheet(); // Get the default sheet
-
-  // Write the data to the sheet
-  sheet.getRange(1, 1, reportData.length, reportData[0].length).setValues(reportData);
-
-  // Log the URL of the new spreadsheet
-  Logger.log(`New spreadsheet created: ${spreadsheet.getUrl()}`);
+  // Return the data for further processing
+  return queryData;
 }
 
-// Function to extract all unique keys from an array of objects
+function writeDataToSheet() {
+  // Call getReport to fetch data
+  const apiData = getReport();
+
+  // Ensure the data is an array
+  const dataArray = Array.isArray(apiData) ? apiData : [apiData];
+
+  // Extract unique keys from the data
+  const allKeys = extractUniqueKeys(dataArray);
+
+  // Format the data: create rows with empty strings for missing keys
+  const rows = dataArray.map(item => {
+    return allKeys.map(key => item[key] || ""); // Fill missing values with empty strings
+  });
+
+  // Add headers as the first row
+  const sheetData = [allKeys, ...rows];
+
+  // Create a new spreadsheet
+  const spreadsheet = SpreadsheetApp.create("API Report");
+  const sheet = spreadsheet.getActiveSheet();
+
+  // Write the data to the spreadsheet
+  sheet.getRange(1, 1, sheetData.length, sheetData[0].length).setValues(sheetData);
+
+  // Log the URL of the new spreadsheet
+  Logger.log(`Spreadsheet created: ${spreadsheet.getUrl()}`);
+}
+
+// Function to extract unique keys from an array of objects
 function extractUniqueKeys(dataArray) {
   const allKeys = [];
   for (const item of dataArray) {
@@ -38,54 +54,4 @@ function extractUniqueKeys(dataArray) {
     }
   }
   return allKeys;
-}
-
-// Mock function to simulate fetching varied API data
-function fetchDataFromAPI() {
-  return [
-    {
-      ID: "VULN-001",
-      Desc: "SQL Injection",
-      Severity: "High",
-      Date: "2025-01-01",
-      ExploitAvailable: "Yes",
-      CVSS: 9.8,
-      AffectedSystems: "Database Server",
-      Remediation: "Sanitize inputs"
-    },
-    {
-      ID: "VULN-002",
-      Desc: "Cross-Site Scripting",
-      Severity: "Medium",
-      CVSS: 6.5,
-      AffectedSystems: "Web Application",
-      Remediation: "Validate user inputs"
-    },
-    {
-      ID: "VULN-003",
-      Severity: "Low",
-      Date: "2025-01-05",
-      CVSS: 4.3,
-      ExploitAvailable: "No"
-      // Missing "Desc" and "AffectedSystems"
-    },
-    {
-      ID: "VULN-004",
-      Desc: "Broken Authentication",
-      CVSS: 8.0,
-      AffectedSystems: "Authentication Server",
-      // Missing "Severity" and "Date"
-      Notes: "Ensure proper session management"
-    },
-    {
-      ID: "VULN-005",
-      Desc: "Insecure Deserialization",
-      Severity: "Critical",
-      Date: "2025-01-10",
-      ExploitAvailable: "Yes",
-      CVSS: 10.0,
-      Remediation: "Implement strong input validation",
-      Impact: "Remote Code Execution"
-    }
-  ];
 }
