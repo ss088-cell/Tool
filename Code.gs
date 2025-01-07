@@ -3,7 +3,7 @@ function createVulnerabilityReport() {
   const apiData = fetchDataFromAPI(); // Replace with your actual API fetching logic if needed
 
   // Extract all unique keys from the JSON data
-  const allKeys = [...new Set(apiData.flatMap(Object.keys))];
+  const allKeys = extractUniqueKeys(apiData);
 
   // Create data rows with empty strings for missing fields
   const rows = apiData.map(item => {
@@ -22,6 +22,19 @@ function createVulnerabilityReport() {
 
   // Log the URL of the new spreadsheet
   Logger.log(`New spreadsheet created: ${spreadsheet.getUrl()}`);
+}
+
+// Function to extract all unique keys from an array of objects
+function extractUniqueKeys(data) {
+  const allKeys = [];
+  data.forEach(item => {
+    Object.keys(item).forEach(key => {
+      if (!allKeys.includes(key)) {
+        allKeys.push(key);
+      }
+    });
+  });
+  return allKeys;
 }
 
 // Mock function to simulate fetching varied API data
@@ -73,3 +86,4 @@ function fetchDataFromAPI() {
     }
   ];
 }
+      
