@@ -1,12 +1,15 @@
 function createVulnerabilityReport() {
   // Fetch data from the mock API
-  const apiData = fetchDataFromAPI(); // Replace with your actual API fetching logic if needed
+  const apiData = fetchDataFromAPI();
+
+  // Check if the data is an array; if not, convert it to an array
+  const dataArray = Array.isArray(apiData) ? apiData : [apiData];
 
   // Extract all unique keys from the JSON data
-  const allKeys = extractUniqueKeys(apiData);
+  const allKeys = extractUniqueKeys(dataArray);
 
   // Create data rows with empty strings for missing fields
-  const rows = apiData.map(item => {
+  const rows = dataArray.map(item => {
     return allKeys.map(key => item[key] || ""); // Fill missing keys with empty strings
   });
 
@@ -25,15 +28,15 @@ function createVulnerabilityReport() {
 }
 
 // Function to extract all unique keys from an array of objects
-function extractUniqueKeys(data) {
+function extractUniqueKeys(dataArray) {
   const allKeys = [];
-  data.forEach(item => {
-    Object.keys(item).forEach(key => {
+  for (const item of dataArray) {
+    for (const key in item) {
       if (!allKeys.includes(key)) {
         allKeys.push(key);
       }
-    });
-  });
+    }
+  }
   return allKeys;
 }
 
@@ -86,4 +89,3 @@ function fetchDataFromAPI() {
     }
   ];
 }
-      
